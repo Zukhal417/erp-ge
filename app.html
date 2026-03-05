@@ -64,7 +64,7 @@
 
             // Sync iframe src
             const iframe = document.getElementById('content-frame');
-            iframe.src = activePageName + '.html';
+            iframe.src = activePageName;
 
             // Inject layout pointing to this shell
             injectShellLayout("app-shell-container", activePageName);

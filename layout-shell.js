@@ -35,7 +35,8 @@ function injectShellLayout(contentElementId = "app-shell-container", activePage 
         : "flex items-center gap-3 px-4 py-3 text-blue-100 hover:bg-blue-800 hover:text-white rounded-lg font-medium transition-colors border border-transparent hover:border-blue-700";
 
     // Sidebar links action
-    const shellAction = (pageName) => `onclick="window.location.hash='${pageName}'; document.getElementById('content-frame').src='${pageName}.html'; document.querySelectorAll('a[data-page]').forEach(el => el.className='${linkClasses(false)}'); this.className='${linkClasses(true)}'; document.getElementById('mobile-menu')?.classList.add('hidden');" data-page="${pageName}"`;
+    // Note: Do not append .html if hosted on Netlify as "Pretty URLs" will cause a 301 redirect that can break out of the iframe
+    const shellAction = (pageName) => `onclick="window.location.hash='${pageName}'; document.getElementById('content-frame').src='${pageName}'; document.querySelectorAll('a[data-page]').forEach(el => el.className='${linkClasses(false)}'); this.className='${linkClasses(true)}'; document.getElementById('mobile-menu')?.classList.add('hidden');" data-page="${pageName}"`;
 
     if (user.role === 'admin') {
         navLinksHtml += `

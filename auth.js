@@ -17,7 +17,7 @@ function checkAuthAndRedirect() {
     // 1. Not logged in
     if (!userStr) {
         if (currentPath !== 'login') {
-            window.top.location.replace('login.html');
+            window.location.replace('login.html');
         }
         return null;
     }
@@ -28,12 +28,15 @@ function checkAuthAndRedirect() {
         // 2. Already logged in but trying to access login
         if (currentPath === 'login') {
             if ((user.role || '').toLowerCase() === 'admin') {
-                window.top.location.replace('app.html#admin-txn');
+                window.location.replace('app.html#admin-txn');
             } else {
-                window.top.location.replace('app.html#index');
+                window.location.replace('app.html#index');
             }
             return user;
         }
+
+        // 2.5 Allow shell passthrough silently
+        if (currentPath === 'app') return user;
 
         // 3. Authorization Check
         const role = (user.role || '').toLowerCase(); // Normalize Role to lowercase
@@ -42,9 +45,9 @@ function checkAuthAndRedirect() {
         // If the current page isn't in their allowed list, redirect them to their default page
         if (!allowedRoutes.includes(currentPath)) {
             if (role === 'admin') {
-                window.top.location.replace('app.html#admin-txn');
+                window.location.replace('app.html#admin-txn');
             } else {
-                window.top.location.replace('app.html#index');
+                window.location.replace('app.html#index');
             }
         }
 
@@ -54,7 +57,7 @@ function checkAuthAndRedirect() {
         // Bad JSON in localStorage
         localStorage.removeItem("pos_user");
         if (currentPath !== 'login') {
-            window.top.location.replace('login.html');
+            window.location.replace('login.html');
         }
         return null;
     }
