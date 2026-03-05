@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html lang="id">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="view-transition" content="same-origin">
+    <title>Semua Transaksi - Admin POS DM</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Auth Guard -->
+    <script src="auth.js"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        indigo: { 50: '#eef2ff', 100: '#e0e7ff', 200: '#c7d2fe', 300: '#a5b4fc', 400: '#818cf8', 500: '#6366f1', 600: '#4f46e5', 700: '#4338ca', 800: '#3730a3', 900: '#312e81' }
+                    }
+                }
+            }
+        }
+    </script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <link rel="stylesheet" href="styles.css">
+</head>
+
+<body class="bg-gray-50 text-gray-900 font-sans antialiased min-h-screen">
+
+    <div id="app-container" class="w-full max-w-7xl mx-auto px-4 py-8">
+
+        <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
+            <div>
+                <h1 class="text-2xl font-bold text-gray-800 flex items-center gap-2">
+                    <i data-lucide="file-text" class="text-indigo-600"></i>
+                    Semua Transaksi
+                </h1>
+                <p class="text-gray-500 text-sm mt-1">Daftar seluruh transaksi yang tercatat di sistem</p>
+            </div>
+            <button onclick="fetchTransactions()"
+                class="flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors shadow-sm">
+                <i data-lucide="refresh-cw" class="w-4 h-4" id="refresh-icon"></i> Refresh Data
+            </button>
+        </div>
+
+        <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+
+            <!-- Filters -->
+            <div class="p-4 border-b border-gray-100 flex flex-col md:flex-row gap-4 justify-between bg-gray-50">
+                <div class="flex flex-col md:flex-row gap-4 w-full md:w-auto">
+                    <!-- Search Input -->
+                    <div class="relative w-full md:w-64">
+                        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                            <i data-lucide="search" class="h-4 w-4 text-gray-400"></i>
+                        </div>
+                        <input type="text" id="search-input" placeholder="Cari ID, Nama, Kode..."
+                            class="block w-full pl-10 pr-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 bg-white" />
+                    </div>
+
+                    <!-- Date Input -->
+                    <div class="relative w-full md:w-48">
+                        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                            <i data-lucide="calendar" class="h-4 w-4 text-gray-400"></i>
+                        </div>
+                        <input type="date" id="date-input"
+                            class="block w-full pl-10 pr-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 bg-white text-gray-600" />
+                    </div>
+                </div>
+
+                <div class="text-sm text-gray-500 py-2 font-medium bg-white px-4 border border-gray-200 rounded-lg text-center"
+                    id="data-count">
+                    Loading data...
+                </div>
+            </div>
+
+            <!-- Table -->
+            <div class="overflow-x-auto">
+                <table class="w-full text-left text-sm text-gray-600 min-w-[1000px]">
+                    <thead class="bg-gray-50 text-gray-700 uppercase text-xs font-semibold border-b border-gray-200">
+                        <tr>
+                            <th class="px-5 py-4 whitespace-nowrap">Waktu Transaksi</th>
+                            <th class="px-5 py-4 whitespace-nowrap">CS</th>
+                            <th class="px-5 py-4 whitespace-nowrap">Detail Member</th>
+                            <th class="px-5 py-4 whitespace-nowrap">Program</th>
+                            <th class="px-5 py-4 whitespace-nowrap">Pembayaran</th>
+                            <th class="px-5 py-4 whitespace-nowrap">Keterangan</th>
+                            <th id="header-aksi" class="px-5 py-4 whitespace-nowrap text-right">Aksi</th>
+                        </tr>
+                    </thead>
+                    <tbody id="transactions-tbody" class="divide-y divide-gray-100">
+                        <!-- Transaksi Data injected here -->
+                    </tbody>
+                </table>
+
+                <div id="loading-state" class="flex flex-col justify-center items-center py-20 text-indigo-500 gap-3">
+                    <i data-lucide="loader-2" class="h-8 w-8 animate-spin"></i>
+                    <span class="font-medium text-sm">Mengambil Data Transaksi...</span>
+                </div>
+
+                <div id="empty-state" class="hidden flex-col justify-center items-center py-20 text-gray-400 gap-3">
+                    <i data-lucide="inbox" class="h-12 w-12 text-gray-300"></i>
+                    <span class="font-medium">Tidak ada data transaksi.</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Edit Modal Overlay -->
+    <div id="edit-modal"
+        class="fixed inset-0 z-[60] bg-gray-900 bg-opacity-60 hidden flex items-center justify-center p-4">
+        <div class="bg-white rounded-xl shadow-2xl w-full max-w-3xl max-h-[90vh] flex flex-col">
+            <!-- Header -->
+            <div class="px-6 py-4 border-b border-gray-100 flex justify-between items-center">
+                <h2 class="text-lg font-bold text-gray-800 flex items-center gap-2">
+                    <i data-lucide="edit-3" class="text-indigo-600 h-5 w-5"></i>
+                    Edit Transaksi <span id="modal-title-trx"
+                        class="text-xs ml-2 bg-indigo-100 text-indigo-700 px-2 py-0.5 rounded font-mono"></span>
+                </h2>
+                <button onclick="closeEditModal()"
+                    class="text-gray-400 hover:text-gray-600 p-1 rounded-md hover:bg-gray-100 transition-colors">
+                    <i data-lucide="x" class="h-5 w-5"></i>
+                </button>
+            </div>
+
+            <!-- Body: Scrollable -->
+            <div class="p-6 overflow-y-auto flex-1">
+                <div id="modal-alert" class="hidden mb-4 p-3 rounded text-sm font-medium border-l-4"></div>
+
+                <form id="edit-form" class="space-y-4">
+                    <input type="hidden" id="edit-kode-transaksi" />
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <!-- Left Col -->
+                        <div class="space-y-4">
+                            <div>
+                                <label class="block text-xs font-semibold text-gray-500 uppercase mb-1">Nama
+                                    Member</label>
+                                <input type="text" id="edit-nama"
+                                    class="block w-full px-3 py-2 border border-gray-300 rounded-lg text-sm bg-gray-50"
+                                    readonly />
+                            </div>
+
+                            <div class="grid grid-cols-2 gap-2">
+                                <div>
+                                    <label class="block text-xs font-semibold text-gray-500 uppercase mb-1">Tipe
+                                        Input</label>
+                                    <select id="edit-tipe-input"
+                                        class="block w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 border-indigo-200">
+                                        <option value="Validasi Web">Validasi Web</option>
+                                        <option value="Pelunasan">Pelunasan</option>
+                                        <option value="Tambahan">Tambahan</option>
+                                        <option value="Refund">Refund</option>
+                                        <option value="DP Baru">DP Baru</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-semibold text-gray-500 uppercase mb-1">CS
+                                        Handler</label>
+                                    <input type="text" id="edit-cs"
+                                        class="block w-full px-3 py-2 border border-gray-300 rounded-lg text-sm bg-gray-50"
+                                        readonly />
+                                </div>
+                            </div>
+
+                            <div>
+                                <label class="block text-xs font-semibold text-gray-500 uppercase mb-1">Program
+                                    Details</label>
+                                <textarea id="edit-program" rows="4"
+                                    class="block w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 bg-white"
+                                    placeholder="Edit array program here..."></textarea>
+                            </div>
+
+                            <div>
+                                <label class="block text-xs font-semibold text-gray-500 uppercase mb-1">Keterangan /
+                                    Catatan</label>
+                                <input type="text" id="edit-keterangan"
+                                    class="block w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 bg-white" />
+                            </div>
+                        </div>
+
+                        <!-- Right Col -->
+                        <div class="space-y-4 bg-indigo-50/50 p-4 rounded-xl border border-indigo-100">
+                            <div>
+                                <label class="block text-xs font-semibold text-gray-500 uppercase mb-1">Total Lunas
+                                    (Tagihan)</label>
+                                <div class="relative">
+                                    <span
+                                        class="absolute inset-y-0 left-0 pl-3 flex items-center text-gray-500 text-sm">Rp</span>
+                                    <input type="number" id="edit-total-lunas"
+                                        class="block w-full pl-9 pr-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 bg-white"
+                                        oninput="calculateEditSisa()" />
+                                </div>
+                            </div>
+
+                            <div>
+                                <label class="block text-xs font-semibold text-gray-500 uppercase mb-1">Pembayaran
+                                    (Tunai/TF)</label>
+                                <div class="relative">
+                                    <span
+                                        class="absolute inset-y-0 left-0 pl-3 flex items-center text-gray-500 text-sm">Rp</span>
+                                    <input type="number" id="edit-pembayaran"
+                                        class="block w-full pl-9 pr-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 bg-white"
+                                        oninput="calculateEditSisa()" />
+                                </div>
+                            </div>
+
+                            <div class="pt-2 border-t border-indigo-100 border-dashed">
+                                <label class="block text-xs font-semibold text-indigo-800 uppercase mb-1">Sisa
+                                    (Slisih)</label>
+                                <div class="relative">
+                                    <span
+                                        class="absolute inset-y-0 left-0 pl-3 flex items-center font-bold text-sm">Rp</span>
+                                    <input type="number" id="edit-slisih"
+                                        class="block w-full pl-9 pr-3 py-2 border border-indigo-200 rounded-lg text-sm bg-indigo-50 font-bold"
+                                        readonly />
+                                </div>
+                            </div>
+
+                            <div class="grid grid-cols-2 gap-2 mt-4">
+                                <div>
+                                    <label class="block text-xs font-semibold text-gray-500 uppercase mb-1">Tipe
+                                        Pemby.</label>
+                                    <select id="edit-tipe-pembayaran"
+                                        class="block w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500">
+                                        <option value="-">-</option>
+                                        <option value="EDC">EDC</option>
+                                        <option value="H0">H0</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label
+                                        class="block text-xs font-semibold text-gray-500 uppercase mb-1">Metode</label>
+                                    <select id="edit-metode"
+                                        class="block w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500">
+                                        <option value="CASH">CASH</option>
+                                        <option value="BNI GE">BNI GE</option>
+                                        <option value="BRI GE">BRI GE</option>
+                                        <option value="QRIS BRI GE">QRIS BRI GE</option>
+                                        <option value="QRIS Mandiri GE">QRIS Mandiri GE</option>
+                                        <option value="Mandiri KB">Mandiri KB</option>
+                                        <option value="QRIS Mandiri KB">QRIS Mandiri KB</option>
+                                        <option value="BRI KB">BRI KB</option>
+                                        <option value="QRIS BRI KB">QRIS BRI KB</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </form>
+            </div>
+
+            <!-- Footer -->
+            <div class="px-6 py-4 border-t border-gray-100 flex justify-end gap-3 bg-gray-50 rounded-b-xl">
+                <button type="button" onclick="closeEditModal()"
+                    class="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">
+                    Batalkan
+                </button>
+                <button type="button" id="btn-save-edit" onclick="submitEditTransaction()"
+                    class="flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-indigo-600 rounded-lg hover:bg-indigo-700 transition-colors">
+                    <i data-lucide="loader-2" class="w-4 h-4 animate-spin hidden" id="spinner-edit"></i>
+                    <span id="text-edit">Simpan Perubahan</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Inject JS Logic -->
+    <script src="admin-txn.js"></script>
+    <script>
+        lucide.createIcons();
+    </script>
+</body>
+
+</html>

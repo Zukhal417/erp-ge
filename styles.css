@@ -1,0 +1,68 @@
+/* Tailwind config and normal CSS are handled by CDN. 
+   We only add any required overrides or print rules here. */
+
+@keyframes smooth-appear {
+    0% { opacity: 0.8; }
+    100% { opacity: 1; }
+}
+
+body {
+    animation: smooth-appear 0.3s ease-out forwards;
+}
+
+@media print {
+    * {
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+    }
+
+    @page {
+        margin: 0;
+        size: auto;
+    }
+
+    html,
+    body {
+        height: auto;
+        overflow: hidden !important;
+    }
+
+    body {
+        margin: 0;
+        padding: 0;
+        background-color: white;
+    }
+
+    .no-print {
+        display: none !important;
+    }
+
+    .print\:p-0 {
+        padding: 0 !important;
+    }
+
+    #invoice-modal {
+        position: absolute;
+        left: 0;
+        top: 0;
+        margin: 0;
+        background: transparent;
+        display: block !important;
+        padding: 0;
+        height: auto;
+        overflow: hidden;
+        page-break-inside: avoid;
+        page-break-after: avoid;
+    }
+
+    body>*:not(#invoice-modal) {
+        display: none !important;
+    }
+
+    #invoice-modal>div {
+        max-width: 100%;
+        max-height: none;
+        box-shadow: none;
+        overflow: visible;
+    }
+}

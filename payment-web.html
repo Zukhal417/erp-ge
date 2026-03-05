@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="id">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="view-transition" content="same-origin">
+    <title>Payment Web - POS DM</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        indigo: { 50: '#eef2ff', 100: '#e0e7ff', 200: '#c7d2fe', 300: '#a5b4fc', 400: '#818cf8', 500: '#6366f1', 600: '#4f46e5', 700: '#4338ca', 800: '#3730a3', 900: '#312e81' }
+                    }
+                }
+            }
+        }
+    </script>
+    <!-- Auth Guard -->
+    <script src="auth.js"></script>
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <link rel="stylesheet" href="styles.css">
+</head>
+
+<body class="bg-gray-50 text-gray-900 font-sans antialiased min-h-screen border-t-4 border-indigo-600">
+
+    <div id="app-container" class="w-full max-w-7xl mx-auto px-4 py-8">
+        <div class="flex justify-between items-center mb-6">
+            <div>
+                <h1 class="text-2xl font-bold text-gray-800 flex items-center gap-2">
+                    <i data-lucide="globe" class="text-indigo-600 h-6 w-6"></i>
+                    Payment Web (Web Checkout Log)
+                </h1>
+                <p class="text-gray-500 text-sm mt-1">Cross-reference Member Order Numbers before Validating</p>
+            </div>
+
+            <button onclick="fetchPaymentData()"
+                class="flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors shadow-sm">
+                <i data-lucide="refresh-cw" class="w-4 h-4" id="refresh-icon"></i> Refresh
+            </button>
+        </div>
+
+        <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+            <div
+                class="p-4 border-b border-gray-100 flex flex-col md:flex-row gap-4 justify-between items-center bg-gray-50">
+                <div class="relative w-full md:w-96">
+                    <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                        <i data-lucide="search" class="h-4 w-4 text-gray-400"></i>
+                    </div>
+                    <input type="text" id="search-input" placeholder="Cari Order Number atau Nama Customer..."
+                        class="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 bg-white" />
+                </div>
+                <div class="text-sm font-semibold text-gray-500 bg-white px-3 py-1 rounded-md border" id="data-count">
+                    Loading data...
+                </div>
+            </div>
+
+            <div class="overflow-x-auto">
+                <table class="w-full text-left text-sm text-gray-600 min-w-max">
+                    <thead class="bg-gray-50 text-gray-700 uppercase text-xs font-semibold border-b">
+                        <tr>
+                            <th class="px-6 py-4">Tgl Order</th>
+                            <th class="px-6 py-4">Order Number</th>
+                            <th class="px-6 py-4">Nama Lengkap</th>
+                            <th class="px-6 py-4">Program</th>
+                            <th class="px-6 py-4">Total Bayar</th>
+                            <th class="px-6 py-4">Bukti Transfer</th>
+                        </tr>
+                    </thead>
+                    <tbody id="payment-tbody" class="divide-y divide-gray-100">
+                        <!-- Data Payment injected here -->
+                    </tbody>
+                </table>
+
+                <div id="loading-state" class="flex justify-center items-center py-20 text-indigo-500 gap-3">
+                    <i data-lucide="loader-2" class="h-8 w-8 animate-spin"></i>
+                    <span class="font-medium">Mengambil Data Website...</span>
+                </div>
+
+                <div id="empty-state" class="hidden flex-col justify-center items-center py-20 text-gray-400 gap-3">
+                    <i data-lucide="inbox" class="h-12 w-12 text-gray-300"></i>
+                    <span class="font-medium">Tidak ada data pembayaran ditemukan.</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Inject JS Logic -->
+    <script src="payment-web.js"></script>
+    <script>
+        lucide.createIcons();
+    </script>
+</body>
+
+</html>

@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="id">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login - POS Global English</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Auth Checker (immediately protects page) -->
+    <script src="auth.js"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        indigo: {
+                            50: '#eef2ff',
+                            100: '#e0e7ff',
+                            200: '#c7d2fe',
+                            300: '#a5b4fc',
+                            400: '#818cf8',
+                            500: '#6366f1',
+                            600: '#4f46e5',
+                            700: '#4338ca',
+                            800: '#3730a3',
+                            900: '#312e81',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+</head>
+
+<body class="bg-gray-50 text-gray-900 font-sans antialiased min-h-screen">
+
+    <div class="min-h-screen bg-gray-50 flex flex-col justify-center py-12 sm:px-6 lg:px-8">
+        <div class="sm:mx-auto sm:w-full sm:max-w-md">
+            <div class="flex justify-center mb-6">
+                <img src="https://globalenglish.id/wp-content/uploads/2023/09/image20-min.png" alt="Global English Logo"
+                    class="h-16 object-contain" />
+            </div>
+            <h2 class="text-center text-3xl font-extrabold text-gray-900">
+                Global English
+            </h2>
+            <p class="mt-2 text-center text-sm text-gray-600">
+                Sign in to your account
+            </p>
+        </div>
+
+        <div class="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
+            <div class="bg-white py-8 px-4 shadow sm:rounded-lg sm:px-10">
+                <form id="login-form" class="space-y-6">
+
+                    <div id="error-alert"
+                        class="hidden bg-red-50 border-l-4 border-red-500 p-4 rounded-md text-red-700 text-sm">
+                        <!-- Error message here -->
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700">
+                            Username
+                        </label>
+                        <div class="mt-1 relative rounded-md shadow-sm">
+                            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                <i data-lucide="user" class="h-5 w-5 text-gray-400"></i>
+                            </div>
+                            <input type="text" id="username" required
+                                class="block w-full pl-10 sm:text-sm border-gray-300 rounded-md py-2 border focus:ring-indigo-500 focus:border-indigo-500"
+                                placeholder="Username / ID CS" />
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700">
+                            Password
+                        </label>
+                        <div class="mt-1 relative rounded-md shadow-sm">
+                            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                <i data-lucide="lock" class="h-5 w-5 text-gray-400"></i>
+                            </div>
+                            <input type="password" id="password" required
+                                class="block w-full pl-10 sm:text-sm border-gray-300 rounded-md py-2 border focus:ring-indigo-500 focus:border-indigo-500"
+                                placeholder="••••••••" />
+                        </div>
+                    </div>
+
+                    <div>
+                        <button type="submit" id="btn-login"
+                            class="w-full flex justify-center py-2.5 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:bg-indigo-400">
+                            <span id="text-login">Sign in</span>
+                            <i data-lucide="loader-2" id="spinner-login" class="animate-spin ml-2 hidden h-5 w-5"></i>
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script src="login.js"></script>
+    <script>
+        lucide.createIcons();
+    </script>
+</body>
+
+</html>

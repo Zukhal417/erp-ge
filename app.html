@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="id">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>POS Sistem - Global English</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        indigo: { 50: '#eef2ff', 100: '#e0e7ff', 200: '#c7d2fe', 300: '#a5b4fc', 400: '#818cf8', 500: '#6366f1', 600: '#4f46e5', 700: '#4338ca', 800: '#3730a3', 900: '#312e81' }
+                    }
+                }
+            }
+        }
+    </script>
+    <!-- Auth Guard -->
+    <script src="auth.js"></script>
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <link rel="stylesheet" href="styles.css">
+    <style>
+        /* Hide scrollbar for the wrapper, but let iframe handle inner scroll */
+        body {
+            overflow: hidden;
+        }
+
+        #content-frame {
+            border: none;
+            width: 100%;
+            height: 100%;
+            display: block;
+        }
+    </style>
+</head>
+
+<body class="bg-gray-50 text-gray-900 font-sans antialiased min-h-screen">
+
+    <!-- The Layout JS injects the Sidebar Wrapper around this specific ID -->
+    <!-- The content inside is simply the iframe pointing to the default view -->
+    <div id="app-shell-container" class="w-full h-screen">
+        <iframe id="content-frame" src="index.html" name="content-frame"></iframe>
+    </div>
+
+    <!-- Inject JS Logic & Layout -->
+    <script src="layout-shell.js"></script>
+    <script>
+        // Wait for DOM
+        document.addEventListener('DOMContentLoaded', () => {
+            lucide.createIcons();
+            // Automatically determine default route
+            const activePageRaw = window.location.hash.replace('#', '') || 'index.html';
+            let activePageName = activePageRaw.replace('.html', '');
+
+            // Validate mapping
+            const validPages = ['index', 'payment-web', 'admin-txn', 'admin-cs'];
+            if (!validPages.includes(activePageName)) {
+                activePageName = 'index';
+            }
+
+            // Sync iframe src
+            const iframe = document.getElementById('content-frame');
+            iframe.src = activePageName + '.html';
+
+            // Inject layout pointing to this shell
+            injectShellLayout("app-shell-container", activePageName);
+        });
+    </script>
+</body>
+
+</html>
