@@ -335,9 +335,11 @@
     <script src="layout.js"></script>
     <script src="app.js"></script>
     <script>
-        // Jika dibuka langsung (bukan di iframe app.html), inject menu layout.
+        // Jika dibuka langsung dari domain utama, jadikan app.html sebagai dashboard utama.
         if (window.top === window.self) {
-            injectLayout("app-container", "index");
+            const role = (window.currentUser?.role || "").toLowerCase();
+            const defaultHash = role === "admin" ? "admin-txn" : "index";
+            window.location.replace(`app.html#${defaultHash}`);
         }
         lucide.createIcons();
     </script>
