@@ -335,11 +335,9 @@
     <script src="layout.js"></script>
     <script src="app.js"></script>
     <script>
-        // Jika dibuka langsung dari domain utama, jadikan app.html sebagai dashboard utama.
+        // Jika dibuka langsung, pakai layout navigasi tanpa redirect.
         if (window.top === window.self) {
-            const role = (window.currentUser?.role || "").toLowerCase();
-            const defaultHash = role === "admin" ? "admin-txn" : "index";
-            window.location.replace(`app.html#${defaultHash}`);
+            injectLayout("app-container", "index");
         }
         lucide.createIcons();
     </script>

@@ -42,9 +42,9 @@ function checkAuthAndRedirect() {
     // 2. Already logged in but trying to access login
     if (currentPath === 'login') {
         if (user.role === 'admin') {
-            window.location.replace('app.html#admin-txn');
+            window.location.replace('admin-txn.html');
         } else {
-            window.location.replace('app.html#index');
+            window.location.replace('index.html');
         }
         return user;
     }
@@ -58,9 +58,9 @@ function checkAuthAndRedirect() {
     // If the current page isn't in their allowed list, redirect them to their default page
     if (!allowedRoutes.includes(currentPath)) {
         if (user.role === 'admin') {
-            window.location.replace('app.html#admin-txn');
+            window.location.replace('admin-txn.html');
         } else {
-            window.location.replace('app.html#index');
+            window.location.replace('index.html');
         }
     }
 

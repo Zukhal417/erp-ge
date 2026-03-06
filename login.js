@@ -53,9 +53,9 @@ loginForm.addEventListener('submit', async (e) => {
             localStorage.setItem("pos_user", JSON.stringify(targetUser));
 
             if ((targetUser.role || '').toLowerCase() === "admin") {
-                window.location.replace("app.html#admin-txn");
+                window.location.replace("admin-txn.html");
             } else {
-                window.location.replace("app.html#index");
+                window.location.replace("index.html");
             }
         } else {
             showError(result.message || "Username atau password salah / Gagal mengambil data.");
