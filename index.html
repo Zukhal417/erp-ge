@@ -332,9 +332,13 @@
         </div>
     </div>
 
+    <script src="layout.js"></script>
     <script src="app.js"></script>
     <script>
-        // Initialize Lucide icons
+        // Jika dibuka langsung (bukan di iframe app.html), inject menu layout.
+        if (window.top === window.self) {
+            injectLayout("app-container", "index");
+        }
         lucide.createIcons();
     </script>
 </body>

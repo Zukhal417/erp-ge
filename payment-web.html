@@ -90,8 +90,12 @@
     </div>
 
     <!-- Inject JS Logic -->
+    <script src="layout.js"></script>
     <script src="payment-web.js"></script>
     <script>
+        if (window.top === window.self) {
+            injectLayout("app-container", "payment-web");
+        }
         lucide.createIcons();
     </script>
 </body>

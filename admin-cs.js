@@ -27,6 +27,11 @@ const formTitle = document.getElementById('form-title');
 
 // State
 let users = [];
+const currentUser = window.getAuthenticatedUser ? window.getAuthenticatedUser() : null;
+
+function ensureAdmin() {
+    return (currentUser?.role || "").toLowerCase() === "admin";
+}
 
 function showSuccess(msg) {
     alertSuccess.textContent = msg;
@@ -82,35 +87,69 @@ async function fetchUsers() {
 // Render Table
 function renderTable() {
     tbody.innerHTML = '';
+    const currentUsername = currentUser?.username || "";
+
     users.forEach((user, idx) => {
         const tr = document.createElement('tr');
         tr.className = "hover:bg-gray-50 transition-colors";
 
-        const isSelf = user.username === JSON.parse(localStorage.getItem('pos_user')).username;
+        const isSelf = user.username === currentUsername;
+        const roleClass = user.role === 'admin' ? 'bg-purple-100 text-purple-700' : 'bg-emerald-100 text-emerald-700';
 
-        tr.innerHTML = `
-            <td class="px-6 py-4 font-mono text-gray-500">${user.id || (idx + 1)}</td>
-            <td class="px-6 py-4 font-bold text-gray-800 flex items-center gap-2">
-                ${user.username}
-                ${isSelf ? '<span class="px-2 py-0.5 rounded text-[10px] bg-blue-100 text-blue-700 font-semibold uppercase">Anda</span>' : ''}
-            </td>
-            <td class="px-6 py-4">
-                <span class="inline-flex px-2 py-1 rounded text-xs font-semibold uppercase tracking-wider ${user.role === 'admin' ? 'bg-purple-100 text-purple-700' : 'bg-emerald-100 text-emerald-700'
-            }">
-                    ${user.role}
-                </span>
-            </td>
-            <td class="px-6 py-4 text-right">
-                <div class="flex justify-end gap-2">
-                    <button type="button" onclick="editUser('${user.id}', '${user.username}', '${user.role}')" class="p-2 text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors" title="Edit">
-                        Edit
-                    </button>
-                    <button type="button" onclick="deleteUser('${user.id}')" class="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors" title="Delete" ${isSelf ? 'disabled class="opacity-30"' : ''}>
-                        Hapus
-                    </button>
-                </div>
-            </td>
-        `;
+        const tdId = document.createElement('td');
+        tdId.className = "px-6 py-4 font-mono text-gray-500";
+        tdId.textContent = String(user.id || (idx + 1));
+
+        const tdUsername = document.createElement('td');
+        tdUsername.className = "px-6 py-4 font-bold text-gray-800";
+        const usernameWrap = document.createElement('div');
+        usernameWrap.className = "flex items-center gap-2";
+        const usernameText = document.createElement('span');
+        usernameText.textContent = user.username || "-";
+        usernameWrap.appendChild(usernameText);
+        if (isSelf) {
+            const selfBadge = document.createElement('span');
+            selfBadge.className = "px-2 py-0.5 rounded text-[10px] bg-blue-100 text-blue-700 font-semibold uppercase";
+            selfBadge.textContent = "Anda";
+            usernameWrap.appendChild(selfBadge);
+        }
+        tdUsername.appendChild(usernameWrap);
+
+        const tdRole = document.createElement('td');
+        tdRole.className = "px-6 py-4";
+        const roleBadge = document.createElement('span');
+        roleBadge.className = `inline-flex px-2 py-1 rounded text-xs font-semibold uppercase tracking-wider ${roleClass}`;
+        roleBadge.textContent = user.role || "-";
+        tdRole.appendChild(roleBadge);
+
+        const tdActions = document.createElement('td');
+        tdActions.className = "px-6 py-4 text-right";
+        const actionWrap = document.createElement('div');
+        actionWrap.className = "flex justify-end gap-2";
+
+        const btnEdit = document.createElement('button');
+        btnEdit.type = "button";
+        btnEdit.className = "p-2 text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors";
+        btnEdit.title = "Edit";
+        btnEdit.textContent = "Edit";
+        btnEdit.addEventListener('click', () => window.editUser(user.id, user.username, user.role));
+
+        const btnDelete = document.createElement('button');
+        btnDelete.type = "button";
+        btnDelete.className = "p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors disabled:opacity-30";
+        btnDelete.title = "Delete";
+        btnDelete.textContent = "Hapus";
+        btnDelete.disabled = isSelf;
+        btnDelete.addEventListener('click', () => window.deleteUser(user.id));
+
+        actionWrap.appendChild(btnEdit);
+        actionWrap.appendChild(btnDelete);
+        tdActions.appendChild(actionWrap);
+
+        tr.appendChild(tdId);
+        tr.appendChild(tdUsername);
+        tr.appendChild(tdRole);
+        tr.appendChild(tdActions);
         tbody.appendChild(tr);
     });
 }
@@ -160,6 +199,10 @@ window.editUser = function (id, username, role) {
 };
 
 window.deleteUser = async function (id) {
+    if (!ensureAdmin()) {
+        showError("Akses ditolak. Hanya admin yang bisa menghapus pengguna.");
+        return;
+    }
     if (!confirm("Konfirmasi penghapusan pengguna ini? Tindakan ini tidak dapat dibatalkan.")) return;
 
     try {
@@ -170,7 +213,7 @@ window.deleteUser = async function (id) {
         };
 
         // Optimistic UI Removal
-        tbody.innerHTML = '<td colspan="4" class="text-center p-4">Menghapus...</td>';
+        tbody.innerHTML = '<tr><td colspan="4" class="text-center p-4">Menghapus...</td></tr>';
 
         const response = await fetch(API_URL, {
             method: 'POST',
@@ -199,6 +242,10 @@ btnCancel.addEventListener('click', resetForm);
 
 form.addEventListener('submit', async (e) => {
     e.preventDefault();
+    if (!ensureAdmin()) {
+        showError("Akses ditolak. Hanya admin yang bisa mengelola pengguna.");
+        return;
+    }
     setLoading(true);
     alertError.classList.add('hidden');
     alertSuccess.classList.add('hidden');

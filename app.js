@@ -1,6 +1,26 @@
 // Configuration
 const API_URL = "https://script.google.com/macros/s/AKfycbwVR0p_Sc2sH-yA2zcCqLRh7SwqQeQYue-dmmxp-nWmR6yX_OgweCSlITCOnMxE366-0g/exec";
 
+function escapeHtml(value) {
+    return String(value ?? "")
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#39;");
+}
+
+function toSafeHttpUrl(value) {
+    if (!value) return "";
+    try {
+        const parsed = new URL(String(value), window.location.origin);
+        if (parsed.protocol === "http:" || parsed.protocol === "https:") {
+            return parsed.href;
+        }
+    } catch { }
+    return "";
+}
+
 // DOM Elements
 const elements = {
     typeSelectorContainer: document.getElementById('type-selector-container'),
@@ -78,7 +98,7 @@ let formData = {
     tanggal: new Date().toISOString().split('T')[0],
     jam: new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }).replace('.', ':'),
 
-    payments: [{ amount: 0, method: "BCA" }],
+    payments: [{ amount: 0, method: "BNI GE" }],
 
     tipePelunasan: "-",
     kelas: [],
@@ -292,10 +312,15 @@ function renderUI() {
 
     // Notifications mapping
     if (formData.buktiTransferUrl) {
-        elements.buktiTransferContainer.classList.remove('hidden');
-        elements.buktiTransferImg.src = formData.buktiTransferUrl;
-        elements.buktiTransferLink.href = formData.buktiTransferUrl;
-        elements.buktiTransferTextLink.href = formData.buktiTransferUrl;
+        const safeTransferUrl = toSafeHttpUrl(formData.buktiTransferUrl);
+        if (!safeTransferUrl) {
+            elements.buktiTransferContainer.classList.add('hidden');
+        } else {
+            elements.buktiTransferContainer.classList.remove('hidden');
+            elements.buktiTransferImg.src = safeTransferUrl;
+            elements.buktiTransferLink.href = safeTransferUrl;
+            elements.buktiTransferTextLink.href = safeTransferUrl;
+        }
     } else {
         elements.buktiTransferContainer.classList.add('hidden');
     }
@@ -303,7 +328,11 @@ function renderUI() {
     if (formData.inputType === "Validasi Web" || formData.kodeTransaksi) {
         elements.kodeTransaksiContainer.classList.remove('hidden');
         elements.kodeTransaksiContainer.classList.add('flex');
-        elements.kodeTransaksiText.innerHTML = formData.kodeTransaksi || '<span class="text-indigo-300 italic">Menunggu Cari Data...</span>';
+        if (formData.kodeTransaksi) {
+            elements.kodeTransaksiText.textContent = formData.kodeTransaksi;
+        } else {
+            elements.kodeTransaksiText.innerHTML = '<span class="text-indigo-300 italic">Menunggu Cari Data...</span>';
+        }
     } else {
         elements.kodeTransaksiContainer.classList.add('hidden');
         elements.kodeTransaksiContainer.classList.remove('flex');
@@ -489,7 +518,7 @@ elements.kelasSelect.addEventListener('change', (e) => {
 });
 
 elements.btnAddPayment.addEventListener('click', () => {
-    formData.payments.push({ amount: 0, method: "BCA" });
+    formData.payments.push({ amount: 0, method: "BNI GE" });
     renderUI();
 });
 
@@ -624,12 +653,8 @@ elements.posForm.addEventListener('submit', async (e) => {
     }
 
     try {
-        // Fallback user auth name logic since no backend
-        let csName = "Unknown (HTML)";
-        const userStr = localStorage.getItem("pos_user");
-        if (userStr) {
-            try { csName = JSON.parse(userStr).username; } catch { }
-        }
+        const safeUser = window.getAuthenticatedUser ? window.getAuthenticatedUser() : null;
+        const csName = safeUser?.username || "Unknown (HTML)";
 
         const timestamp = new Date().toLocaleString("en-US", { timeZone: "Asia/Jakarta" });
         const [yyyy, mm, dd] = formData.tanggal.split('-');
@@ -692,10 +717,7 @@ elements.posForm.addEventListener('submit', async (e) => {
             showError("Gagal menyimpan: " + (resParsed.message || "Unknown error"));
         }
     } catch (e) {
-        // If it fails structurally via cors, still show invoice assuming it was caught by google form natively but cors errored on response
-        showSuccess("Request selesai (Bisa jadi terkena CORS, silakan periksa sheet). Membuka Invoice.");
-        generateInvoiceHTML(formData);
-        resetForm();
+        showError("Gagal menyimpan transaksi. Silakan cek koneksi dan coba lagi.");
     } finally {
         resetLoading();
     }
@@ -767,7 +789,7 @@ function generateInvoiceHTML(data) {
         itemsHTML += `
             <tr class="${bgClass} text-center text-sm font-semibold text-gray-700">
                 <td class="py-4 px-2 border-r border-white">${String(idx + 1).padStart(2, '0')}</td>
-                <td class="py-4 px-4 text-left border-r border-white">${item.desc}</td>
+                <td class="py-4 px-4 text-left border-r border-white">${escapeHtml(item.desc)}</td>
                 <td class="py-4 px-2 border-r border-white">${item.qty}</td>
                 <td class="py-4 px-4 border-r border-white">-</td>
                 <td class="py-4 px-4">-</td>
@@ -786,11 +808,15 @@ function generateInvoiceHTML(data) {
         : `<div class="absolute top-10 right-4 border-[6px] border-red-500 text-red-500 font-black tracking-widest px-6 py-2 rounded-xl transform -rotate-[15deg] opacity-80 z-10 text-4xl uppercase shadow-sm bg-white/50 backdrop-blur-sm">UNPAID</div>`;
 
     // Retrieve Admin Name for Signature
-    let csName = "Unknown";
-    const userStr = localStorage.getItem("pos_user");
-    if (userStr) {
-        try { csName = JSON.parse(userStr).username; } catch { }
-    }
+    const safeUser = window.getAuthenticatedUser ? window.getAuthenticatedUser() : null;
+    const csName = safeUser?.username || "Unknown";
+    const invoiceNumber = escapeHtml(data.kodeTransaksi || data.nomorID || "GE-XX-XXXX");
+    const safeNama = escapeHtml(data.nama || "Nama Client");
+    const safeNomorId = escapeHtml(data.nomorID || "-");
+    const safeDate = escapeHtml(`${dateFormatted} ${data.jam || ""}`.trim());
+    const safePaymentMethods = escapeHtml(paymentMethods || "-");
+    const safeTerbilang = escapeHtml(`${terbilang(currentPaymentTtl)} RUPIAH.`);
+    const safeCsName = escapeHtml(csName);
 
     elements.printableInvoice.innerHTML = `
         <div class="relative bg-white w-full mx-auto" style="min-height: auto; padding: 40px; font-family: 'Inter', sans-serif;">
@@ -810,19 +836,19 @@ function generateInvoiceHTML(data) {
                     <h1 class="text-[5rem] font-black text-gray-900 leading-none tracking-tighter mb-8">Invoice</h1>
                     
                     <div class="text-xs font-bold text-sky-500 uppercase tracking-widest mb-1">INVOICE NUMBER:</div>
-                    <div class="text-2xl font-bold text-gray-900">${data.kodeTransaksi || data.nomorID || "GE-XX-XXXX"}</div>
+                    <div class="text-2xl font-bold text-gray-900">${invoiceNumber}</div>
                 </div>
                 
                 <div class="w-1/2 pl-12">
                     <div class="text-xs font-bold text-sky-500 uppercase tracking-widest mb-1">CLIENT:</div>
-                    <div class="text-2xl font-black text-gray-900 mb-1 uppercase">${data.nama || "Nama Client"}</div>
-                    <div class="text-sm font-bold text-gray-800 mb-6">ID: ${data.nomorID || "-"}</div>
+                    <div class="text-2xl font-black text-gray-900 mb-1 uppercase">${safeNama}</div>
+                    <div class="text-sm font-bold text-gray-800 mb-6">ID: ${safeNomorId}</div>
                     
                     <div class="text-xs font-bold text-sky-500 uppercase tracking-widest mb-1">TRANSACTION DATE:</div>
-                    <div class="text-sm font-bold text-gray-800 mb-2">${dateFormatted} ${data.jam || ""}</div>
+                    <div class="text-sm font-bold text-gray-800 mb-2">${safeDate}</div>
                     
                     <div class="text-xs font-bold text-sky-500 uppercase tracking-widest mb-1">PAYMENT METHOD:</div>
-                    <div class="text-sm font-bold text-gray-800">${paymentMethods || "-"}</div>
+                    <div class="text-sm font-bold text-gray-800">${safePaymentMethods}</div>
                 </div>
             </div>
 
@@ -864,7 +890,7 @@ function generateInvoiceHTML(data) {
 
             <div class="mt-2 text-right mb-12">
                 <span class="text-xs font-bold text-sky-500 tracking-wide uppercase">TERBILANG: </span>
-                <span class="text-sm font-black text-gray-800 ml-1 uppercase border-b-2 border-sky-200">${terbilang(currentPaymentTtl)} RUPIAH.</span>
+                <span class="text-sm font-black text-gray-800 ml-1 uppercase border-b-2 border-sky-200">${safeTerbilang}</span>
             </div>
 
             <div class="flex justify-between items-end">
@@ -875,7 +901,7 @@ function generateInvoiceHTML(data) {
                     <p class="text-sm font-bold text-gray-800 mb-8">Pare, ${dateFormatted}</p>
                     <div class="border-b border-gray-800 w-full mb-1"></div>
                     <p class="text-sm font-bold text-gray-800">Marketing,</p>
-                    <p class="text-sm font-bold text-gray-800">( ${csName} )</p>
+                    <p class="text-sm font-bold text-gray-800">( ${safeCsName} )</p>
                 </div>
             </div>
             

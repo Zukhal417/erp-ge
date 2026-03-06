@@ -265,8 +265,12 @@
     </div>
 
     <!-- Inject JS Logic -->
+    <script src="layout.js"></script>
     <script src="admin-txn.js"></script>
     <script>
+        if (window.top === window.self) {
+            injectLayout("app-container", "admin-txn");
+        }
         lucide.createIcons();
     </script>
 </body>

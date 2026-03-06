@@ -1,5 +1,25 @@
 const API_URL = "https://script.google.com/macros/s/AKfycbwVR0p_Sc2sH-yA2zcCqLRh7SwqQeQYue-dmmxp-nWmR6yX_OgweCSlITCOnMxE366-0g/exec";
 
+function escapeHtml(value) {
+    return String(value ?? "")
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#39;");
+}
+
+function toSafeHttpUrl(value) {
+    if (!value) return "";
+    try {
+        const parsed = new URL(String(value), window.location.origin);
+        if (parsed.protocol === "http:" || parsed.protocol === "https:") {
+            return parsed.href;
+        }
+    } catch { }
+    return "";
+}
+
 // DOM
 const tbody = document.getElementById('payment-tbody');
 const searchInput = document.getElementById('search-input');
@@ -91,21 +111,21 @@ function renderTable() {
         const orderNum = row["Order Number"] || "-";
         const nama = row["Nama Lengkap"] || row["Name"] || "-";
 
-        let programStr = `<div class="text-xs font-semibold text-gray-700">${row["Item Name"] || "-"}</div>`;
+        let programStr = `<div class="text-xs font-semibold text-gray-700">${escapeHtml(row["Item Name"] || "-")}</div>`;
         if (row["Penjemputan Dari"] && row["Penjemputan Dari"] !== "-") {
-            programStr += `<div class="text-xs text-blue-600 font-medium mt-1">+ Jemput ${row["Penjemputan Dari"]}</div>`;
+            programStr += `<div class="text-xs text-blue-600 font-medium mt-1">+ Jemput ${escapeHtml(row["Penjemputan Dari"])}</div>`;
         }
 
         const totalBayar = formatRupiah(row["Total Bayar"]);
-        const buktiUrl = row["Bukti Transfer"] || row["Bukti"];
+        const buktiUrl = toSafeHttpUrl(row["Bukti Transfer"] || row["Bukti"]);
         const buktiStr = buktiUrl
-            ? `<a href="${buktiUrl}" target="_blank" rel="noreferrer" class="text-blue-600 hover:text-blue-800 hover:underline flex items-center gap-1 font-medium bg-blue-50 px-2 py-1 rounded w-fit"><i data-lucide="image" class="w-4 h-4"></i> Lihat Foto</a>`
+            ? `<a href="${escapeHtml(buktiUrl)}" target="_blank" rel="noreferrer" class="text-blue-600 hover:text-blue-800 hover:underline flex items-center gap-1 font-medium bg-blue-50 px-2 py-1 rounded w-fit"><i data-lucide="image" class="w-4 h-4"></i> Lihat Foto</a>`
             : `<span class="text-gray-400 bg-gray-100 px-2 py-1 rounded">Belum ada</span>`;
 
         tr.innerHTML = `
-            <td class="px-6 py-4 whitespace-nowrap text-gray-600">${orderDate}</td>
-            <td class="px-6 py-4 font-mono font-bold text-indigo-600 whitespace-nowrap">${orderNum}</td>
-            <td class="px-6 py-4 font-bold text-gray-800">${nama}</td>
+            <td class="px-6 py-4 whitespace-nowrap text-gray-600">${escapeHtml(orderDate)}</td>
+            <td class="px-6 py-4 font-mono font-bold text-indigo-600 whitespace-nowrap">${escapeHtml(orderNum)}</td>
+            <td class="px-6 py-4 font-bold text-gray-800">${escapeHtml(nama)}</td>
             <td class="px-6 py-4">${programStr}</td>
             <td class="px-6 py-4 font-bold text-emerald-600 whitespace-nowrap">${totalBayar}</td>
             <td class="px-6 py-4 text-xs">${buktiStr}</td>

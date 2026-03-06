@@ -1,9 +1,7 @@
 // layout-shell.js - Injects the sidebar/navbar into app.html (the SPA shell)
 function injectShellLayout(contentElementId = "app-shell-container", activePage = "") {
-    const userStr = localStorage.getItem("pos_user");
-    if (!userStr) return; // auth.js will handle redirect
-
-    const user = JSON.parse(userStr);
+    const user = window.getAuthenticatedUser ? window.getAuthenticatedUser() : null;
+    if (!user) return; // auth.js will handle redirect
     const body = document.body;
 
     // Create Layout Container

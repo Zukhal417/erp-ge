@@ -1,5 +1,14 @@
 const API_URL = "https://script.google.com/macros/s/AKfycbwVR0p_Sc2sH-yA2zcCqLRh7SwqQeQYue-dmmxp-nWmR6yX_OgweCSlITCOnMxE366-0g/exec";
 
+function escapeHtml(value) {
+    return String(value ?? "")
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#39;");
+}
+
 // DOM
 const searchInput = document.getElementById('search-input');
 const dateInput = document.getElementById('date-input');
@@ -35,15 +44,8 @@ let allTxns = [];
 let filteredTxns = [];
 
 // Auth Check
-const userStr = localStorage.getItem("pos_user");
-let isAdmin = false;
-
-if (userStr) {
-    try {
-        const user = JSON.parse(userStr);
-        isAdmin = (user.role || '').toLowerCase() === 'admin';
-    } catch { }
-}
+const safeUser = window.getAuthenticatedUser ? window.getAuthenticatedUser() : null;
+const isAdmin = (safeUser?.role || "").toLowerCase() === "admin";
 
 if (!isAdmin) {
     const headerAksi = document.getElementById('header-aksi');
@@ -52,10 +54,10 @@ if (!isAdmin) {
 
 // Utils
 function formatDateObj(dateStr) {
-    if (!dateStr) return "-";
+    if (!dateStr) return { date: "-", time: "-" };
     try {
         const d = new Date(dateStr);
-        if (isNaN(d.getTime())) return String(dateStr);
+        if (isNaN(d.getTime())) return { date: String(dateStr), time: "-" };
         const pad = n => n < 10 ? '0' + n : n;
         const yy = d.getFullYear(), mm = pad(d.getMonth() + 1), dd = pad(d.getDate());
         const hh = pad(d.getHours()), mn = pad(d.getMinutes());
@@ -135,7 +137,7 @@ function renderTable() {
         return;
     }
 
-    filteredTxns.forEach((row, i) => {
+    filteredTxns.forEach((row) => {
         const fDto = formatDateObj(row["Time Stamp"] || row["Tanggal"]);
         const badgeClass = getBadgeColor(row["Tipe Input"]);
 
@@ -144,23 +146,23 @@ function renderTable() {
 
         // Render values safely
         const vTimeStamp = `
-            <div class="font-medium text-gray-800">${fDto.date}</div>
-            <div class="text-xs text-gray-500">${fDto.time}</div>
+            <div class="font-medium text-gray-800">${escapeHtml(fDto.date)}</div>
+            <div class="text-xs text-gray-500">${escapeHtml(fDto.time)}</div>
         `;
-        const vCS = `<span class="inline-flex py-1 px-2.5 rounded text-xs font-semibold bg-gray-100 text-gray-700">${row["CS"] || "-"}</span>`;
+        const vCS = `<span class="inline-flex py-1 px-2.5 rounded text-xs font-semibold bg-gray-100 text-gray-700">${escapeHtml(row["CS"] || "-")}</span>`;
 
         const vMember = `
-            <div class="font-bold text-gray-900 group-hover:text-indigo-600 transition-colors">${row["Nama"] || "-"}</div>
+            <div class="font-bold text-gray-900 group-hover:text-indigo-600 transition-colors">${escapeHtml(row["Nama"] || "-")}</div>
             <div class="text-xs font-mono text-gray-500 flex flex-col gap-0.5 mt-1">
-                <span>ID: ${row["Nomor ID"] || "-"}</span>
-                <span class="text-indigo-500">TRX: ${row["Kode Transaksi"] || "-"}</span>
+                <span>ID: ${escapeHtml(row["Nomor ID"] || "-")}</span>
+                <span class="text-indigo-500">TRX: ${escapeHtml(row["Kode Transaksi"] || "-")}</span>
             </div>
-            <span class="mt-2 inline-block px-2 py-0.5 rounded text-[10px] uppercase tracking-wider font-bold ${badgeClass}">${row["Tipe Input"] || "-"}</span>
+            <span class="mt-2 inline-block px-2 py-0.5 rounded text-[10px] uppercase tracking-wider font-bold ${badgeClass}">${escapeHtml(row["Tipe Input"] || "-")}</span>
         `;
 
         const programLineArray = (row["Program"] || "-").split('\n');
         const vProgram = `
-            <div class="text-sm text-gray-800 max-w-[250px] whitespace-pre-line leading-relaxed">${programLineArray.map(p => `• ${p}`).join('<br>')
+            <div class="text-sm text-gray-800 max-w-[250px] whitespace-pre-line leading-relaxed">${programLineArray.map(p => `• ${escapeHtml(p)}`).join('<br>')
             }</div>
         `;
 
@@ -170,38 +172,46 @@ function renderTable() {
                     <span>Tagihan:</span> <span class="font-medium text-gray-700">${formatRupiah(row["Total Lunas"])}</span>
                 </div>
                 <div class="flex justify-between text-sm py-1 border-t border-b border-gray-100 my-1">
-                    <span class="font-medium text-indigo-700">Bayar <span class="bg-indigo-100 text-indigo-800 px-1 rounded text-[10px]">${row["Metode Pembayaran"] || "-"}</span></span>
+                    <span class="font-medium text-indigo-700">Bayar <span class="bg-indigo-100 text-indigo-800 px-1 rounded text-[10px]">${escapeHtml(row["Metode Pembayaran"] || "-")}</span></span>
                     <span class="font-bold text-indigo-700">${formatRupiah(row["Pembayaran"])}</span>
                 </div>
                 <div class="flex justify-between text-xs text-gray-500">
                     <span>Sisa:</span> <span class="font-medium ${Number(row["Slisih"]) <= 0 ? 'text-green-600' : 'text-red-500'}">${formatRupiah(row["Slisih"])}</span>
                 </div>
-                ${row["Tipe Pembayaran"] && row["Tipe Pembayaran"] !== "-" ? `<span class="bg-gray-100 text-gray-600 text-[10px] px-1.5 py-0.5 rounded w-fit">${row["Tipe Pembayaran"]}</span>` : ""}
+                ${row["Tipe Pembayaran"] && row["Tipe Pembayaran"] !== "-" ? `<span class="bg-gray-100 text-gray-600 text-[10px] px-1.5 py-0.5 rounded w-fit">${escapeHtml(row["Tipe Pembayaran"])}</span>` : ""}
             </div>
         `;
 
+        const safeKeterangan = escapeHtml(row["Keterangan"] || "-");
         const vKeterangan = `
-            <div class="text-sm text-gray-600 italic max-w-xs truncate" title="${row["Keterangan"] || "-"}">${row["Keterangan"] || "-"}</div>
+            <div class="text-sm text-gray-600 italic max-w-xs truncate" title="${safeKeterangan}">${safeKeterangan}</div>
         `;
 
-        // Pass the row data encoded safely
-        const safeRowObj = JSON.stringify(row).replace(/"/g, '&quot;');
-
-        let vAksi = "";
-        let tdAksi = "";
+        let tdAksi = null;
 
         if (isAdmin) {
-            vAksi = `
-                <div class="flex gap-2 justify-end">
-                    <button type="button" onclick="openEditModal(${safeRowObj})" class="p-1.5 text-indigo-600 bg-indigo-50 hover:bg-indigo-100 rounded transition-colors" title="Edit Transaksi">
-                        <i data-lucide="edit-3" class="w-4 h-4"></i>
-                    </button>
-                    <button type="button" onclick="deleteTransaction('${row["Kode Transaksi"]}')" class="p-1.5 text-red-600 bg-red-50 hover:bg-red-100 rounded transition-colors" title="Hapus Transaksi">
-                        <i data-lucide="trash-2" class="w-4 h-4"></i>
-                    </button>
-                </div>
-            `;
-            tdAksi = `<td class="px-5 py-4 align-top w-24">${vAksi}</td>`;
+            tdAksi = document.createElement('td');
+            tdAksi.className = "px-5 py-4 align-top w-24";
+            const actionsWrap = document.createElement('div');
+            actionsWrap.className = "flex gap-2 justify-end";
+
+            const btnEdit = document.createElement('button');
+            btnEdit.type = "button";
+            btnEdit.className = "p-1.5 text-indigo-600 bg-indigo-50 hover:bg-indigo-100 rounded transition-colors";
+            btnEdit.title = "Edit Transaksi";
+            btnEdit.innerHTML = '<i data-lucide="edit-3" class="w-4 h-4"></i>';
+            btnEdit.addEventListener('click', () => window.openEditModal(row));
+
+            const btnDelete = document.createElement('button');
+            btnDelete.type = "button";
+            btnDelete.className = "p-1.5 text-red-600 bg-red-50 hover:bg-red-100 rounded transition-colors";
+            btnDelete.title = "Hapus Transaksi";
+            btnDelete.innerHTML = '<i data-lucide="trash-2" class="w-4 h-4"></i>';
+            btnDelete.addEventListener('click', () => window.deleteTransaction(row["Kode Transaksi"]));
+
+            actionsWrap.appendChild(btnEdit);
+            actionsWrap.appendChild(btnDelete);
+            tdAksi.appendChild(actionsWrap);
         }
 
         tr.innerHTML = `
@@ -211,8 +221,9 @@ function renderTable() {
             <td class="px-5 py-4 align-top">${vProgram}</td>
             <td class="px-5 py-4 align-top w-56">${vPembayaran}</td>
             <td class="px-5 py-4 align-top w-48">${vKeterangan}</td>
-            ${tdAksi}
         `;
+
+        if (tdAksi) tr.appendChild(tdAksi);
 
         tbody.appendChild(tr);
     });
@@ -310,6 +321,10 @@ window.calculateEditSisa = function () {
 };
 
 window.submitEditTransaction = async function () {
+    if (!isAdmin) {
+        alert("Akses ditolak.");
+        return;
+    }
     const kodeTrx = eKodeTrx.value;
     if (!kodeTrx) return;
 
@@ -361,6 +376,10 @@ window.submitEditTransaction = async function () {
 };
 
 window.deleteTransaction = async function (kodeTrx) {
+    if (!isAdmin) {
+        alert("Akses ditolak.");
+        return;
+    }
     if (!kodeTrx) return;
     if (!confirm(`Konfirmasi menghapus transaksi ${kodeTrx}? Data yang terhapus tidak bisa dikembalikan.`)) return;
 
